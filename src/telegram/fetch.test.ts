@@ -60,4 +60,26 @@ describe("resolveTelegramFetch", () => {
     resolveTelegramFetch(undefined, { network: { autoSelectFamily: true } });
     expect(setDefaultAutoSelectFamily).toHaveBeenCalledWith(false);
   });
+
+  it("forces IPv4 when env override is set", async () => {
+    vi.stubEnv("MOLTBOT_TELEGRAM_FORCE_IPV4", "1");
+    const fetchMock = vi.fn(async () => ({}));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const { resolveTelegramFetch } = await loadModule();
+    const resolved = resolveTelegramFetch();
+    await resolved!("https://api.telegram.org/");
+    expect(fetchMock).toHaveBeenCalled();
+    expect(fetchMock.mock.calls[0]?.[1]).toHaveProperty("dispatcher");
+  });
+
+  it("does not force IPv4 when disable env is set", async () => {
+    vi.stubEnv("MOLTBOT_TELEGRAM_NO_FORCE_IPV4", "1");
+    const fetchMock = vi.fn(async () => ({}));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const { resolveTelegramFetch } = await loadModule();
+    const resolved = resolveTelegramFetch(undefined, { network: { forceIpv4: true } });
+    await resolved!("https://api.telegram.org/", { method: "GET" });
+    expect(fetchMock).toHaveBeenCalled();
+    expect(fetchMock.mock.calls[0]?.[1]).not.toHaveProperty("dispatcher");
+  });
 });

@@ -23,6 +23,8 @@ export type TelegramActionConfig = {
 export type TelegramNetworkConfig = {
   /** Override Node's autoSelectFamily behavior (true = enable, false = disable). */
   autoSelectFamily?: boolean;
+  /** Force IPv4 for Telegram API calls (workaround for broken IPv6 environments). */
+  forceIpv4?: boolean;
 };
 
 export type TelegramInlineButtonsScope = "off" | "dm" | "group" | "all" | "allowlist";
