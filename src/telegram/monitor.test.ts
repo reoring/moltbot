@@ -184,4 +184,19 @@ describe("monitorTelegramProvider (grammY)", () => {
 
     await expect(monitorTelegramProvider({ token: "tok" })).rejects.toThrow("bad token");
   });
+
+  it("stops polling on auth errors", async () => {
+    const authErr = {
+      error_code: 401,
+      method: "getUpdates",
+      description: "Unauthorized",
+    };
+    runSpy.mockImplementationOnce(() => ({
+      task: () => Promise.reject(authErr),
+      stop: vi.fn(),
+    }));
+
+    await expect(monitorTelegramProvider({ token: "tok" })).resolves.toBeUndefined();
+    expect(runSpy).toHaveBeenCalledTimes(1);
+  });
 });

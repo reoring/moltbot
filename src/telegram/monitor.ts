@@ -74,6 +74,24 @@ const isGetUpdatesConflict = (err: unknown) => {
   return haystack.includes("getupdates");
 };
 
+const isTelegramAuthError = (err: unknown) => {
+  if (!err || typeof err !== "object") return false;
+  const typed = err as {
+    error_code?: number;
+    errorCode?: number;
+    description?: string;
+    method?: string;
+    message?: string;
+  };
+  const errorCode = typed.error_code ?? typed.errorCode;
+  if (errorCode === 401) return true;
+  const haystack = [typed.method, typed.description, typed.message]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes("unauthorized");
+};
+
 export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
   const cfg = opts.config ?? loadConfig();
   const account = resolveTelegramAccount({
@@ -155,6 +173,12 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
     } catch (err) {
       if (opts.abortSignal?.aborted) {
         throw err;
+      }
+      if (isTelegramAuthError(err)) {
+        (opts.runtime?.error ?? console.error)(
+          `Telegram auth error; stopping polling for account "${account.accountId}": ${formatErrorMessage(err)}`,
+        );
+        return;
       }
       const isConflict = isGetUpdatesConflict(err);
       const isRecoverable = isRecoverableTelegramNetworkError(err, { context: "polling" });
